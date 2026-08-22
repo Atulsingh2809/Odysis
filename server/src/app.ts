@@ -48,25 +48,36 @@ export function createApp() {
   app.use(cors({ origin: true, credentials: true }));
   app.use(express.json({ limit: '10mb' }));
 
-  app.get('/api/health', (_req, res) => {
+  // Middleware to normalize req.url for Vercel serverless rewritten paths
+  app.use((req, _res, next) => {
+    if (req.url.startsWith('/api/')) {
+      // Keep as is
+    } else if (req.url.startsWith('/')) {
+      // Enable matching both /auth/login and /api/auth/login
+    }
+    next();
+  });
+
+  app.get(['/api/health', '/health'], (_req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
-  app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+  app.use(['/api/docs', '/docs'], swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-  app.use('/api/auth', authRoutes);
-  app.use('/api/trips', tripRoutes);
-  app.use('/api/stops', stopRouter);
-  app.use('/api/activities', activityRouter);
+  // Mount API routes with dual prefixes for standard Express & Vercel Serverless Function rewrites
+  app.use(['/api/auth', '/auth'], authRoutes);
+  app.use(['/api/trips', '/trips'], tripRoutes);
+  app.use(['/api/stops', '/stops'], stopRouter);
+  app.use(['/api/activities', '/activities'], activityRouter);
   app.use('/api/stops', stopActivityRouter);
-  app.use('/api/stop-activities', stopActivityItemRouter);
-  app.use('/api/expenses', expenseRouter);
-  app.use('/api/shared', sharedRouter);
-  app.use('/api/cities', cityRoutes);
-  app.use('/api/users', userRoutes);
-  app.use('/api/dashboard', dashboardRouter);
-  app.use('/api/recommendations', recommendationRouter);
-  app.use('/api/admin', adminRouter);
+  app.use(['/api/stop-activities', '/stop-activities'], stopActivityItemRouter);
+  app.use(['/api/expenses', '/expenses'], expenseRouter);
+  app.use(['/api/shared', '/shared'], sharedRouter);
+  app.use(['/api/cities', '/cities'], cityRoutes);
+  app.use(['/api/users', '/users'], userRoutes);
+  app.use(['/api/dashboard', '/dashboard'], dashboardRouter);
+  app.use(['/api/recommendations', '/recommendations'], recommendationRouter);
+  app.use(['/api/admin', '/admin'], adminRouter);
 
   // Serve compiled React SPA frontend
   app.use(express.static(clientDistPath));
