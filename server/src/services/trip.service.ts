@@ -1,4 +1,4 @@
-import { Prisma, TripStatus } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import prisma from '../config/database.js';
 import { NotFoundError } from '../utils/errors.js';
 import { requireTripPermission, getUserTripIds } from './authorization.service.js';
@@ -6,13 +6,13 @@ import { generateShareToken } from '../utils/helpers.js';
 
 export class TripService {
   async list(userId: string, params: {
-    page: number; limit: number; search?: string; status?: TripStatus;
+    page: number; limit: number; search?: string; status?: string;
     sortBy: string; sortOrder: 'asc' | 'desc';
   }) {
     const tripIds = await getUserTripIds(userId);
     const where: Prisma.TripWhereInput = {
       id: { in: tripIds },
-      ...(params.search && { name: { contains: params.search, mode: 'insensitive' } }),
+      ...(params.search && { name: { contains: params.search } }),
       ...(params.status && { status: params.status }),
     };
 
@@ -63,7 +63,7 @@ export class TripService {
 
   async create(userId: string, data: {
     name: string; startDate: Date; endDate: Date;
-    description?: string; coverImageUrl?: string; currency: string; status?: TripStatus;
+    description?: string; coverImageUrl?: string; currency: string; status?: string;
   }) {
     return prisma.$transaction(async (tx) => {
       const trip = await tx.trip.create({
@@ -74,7 +74,7 @@ export class TripService {
           endDate: data.endDate,
           description: data.description,
           coverImageUrl: data.coverImageUrl || null,
-          currency: data.currency as Prisma.TripCreateInput['currency'],
+          currency: data.currency,
           status: data.status ?? 'DRAFT',
         },
         include: { stops: true, budget: true },
@@ -90,7 +90,7 @@ export class TripService {
 
   async update(tripId: string, userId: string, data: Partial<{
     name: string; startDate: Date; endDate: Date;
-    description?: string; coverImageUrl?: string; currency: string; status?: TripStatus;
+    description?: string; coverImageUrl?: string; currency: string; status?: string;
   }>) {
     await requireTripPermission(tripId, userId, 'write');
     return prisma.trip.update({
@@ -98,7 +98,7 @@ export class TripService {
       data: {
         ...data,
         coverImageUrl: data.coverImageUrl === '' ? null : data.coverImageUrl,
-        currency: data.currency as Prisma.TripUpdateInput['currency'],
+        currency: data.currency,
       },
       include: { stops: { include: { city: true } }, budget: true },
     });
@@ -188,8 +188,8 @@ export class TripService {
       startDate: Date;
       endDate: Date;
       coverImageUrl: string | null;
-      currency: Prisma.TripCreateInput['currency'];
-      budget: { totalAmount: Prisma.Decimal; currency: Prisma.BudgetCreateInput['currency'] } | null;
+      currency: string;
+      budget: { totalAmount: unknown; currency: string } | null;
       stops: {
         cityId: string;
         orderIndex: number;
@@ -207,9 +207,9 @@ export class TripService {
         }[];
       }[];
       expenses: {
-        category: Prisma.ExpenseCreateInput['category'];
-        amount: Prisma.Decimal;
-        currency: Prisma.ExpenseCreateInput['currency'];
+        category: string;
+        amount: unknown;
+        currency: string;
         description: string | null;
         date: Date;
       }[];
@@ -238,7 +238,7 @@ export class TripService {
         await tx.budget.create({
           data: {
             tripId: newTrip.id,
-            totalAmount: original.budget.totalAmount,
+            totalAmount: Number(original.budget.totalAmount),
             currency: original.budget.currency,
           },
         });
@@ -277,7 +277,7 @@ export class TripService {
           data: {
             tripId: newTrip.id,
             category: expense.category,
-            amount: expense.amount,
+            amount: Number(expense.amount),
             currency: expense.currency,
             description: expense.description,
             date: expense.date,
@@ -291,9 +291,9 @@ export class TripService {
 
   private formatTripListItem(trip: {
     id: string; name: string; startDate: Date; endDate: Date;
-    coverImageUrl: string | null; status: TripStatus; currency: string;
+    coverImageUrl: string | null; status: string; currency: string;
     stops: { city: { name: string } }[];
-    budget: { totalAmount: Prisma.Decimal } | null;
+    budget: { totalAmount: unknown } | null;
     _count: { stops: number };
   }) {
     return {
@@ -306,7 +306,7 @@ export class TripService {
       currency: trip.currency,
       destinationCount: trip._count.stops,
       destinations: trip.stops.map((s) => s.city.name),
-      budgetLimit: trip.budget?.totalAmount ?? null,
+      budgetLimit: trip.budget ? Number(trip.budget.totalAmount) : null,
     };
   }
 }

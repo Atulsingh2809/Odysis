@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
 import { config } from './config/index.js';
@@ -17,6 +19,10 @@ import tripRoutes, {
 import cityRoutes from './routes/city.routes.js';
 import userRoutes, { dashboardRouter, recommendationRouter, adminRouter } from './routes/user.routes.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const clientDistPath = path.resolve(__dirname, '../../client/dist');
+
 const swaggerSpec = swaggerJsdoc({
   definition: {
     openapi: '3.0.0',
@@ -25,7 +31,7 @@ const swaggerSpec = swaggerJsdoc({
       version: '1.0.0',
       description: 'Personalized Travel Planning Platform API',
     },
-    servers: [{ url: `http://localhost:${config.port}/api` }],
+    servers: [{ url: `/api` }],
     components: {
       securitySchemes: {
         bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
@@ -39,7 +45,7 @@ export function createApp() {
   const app = express();
 
   app.use(helmet({ contentSecurityPolicy: false }));
-  app.use(cors({ origin: config.clientUrl, credentials: true }));
+  app.use(cors({ origin: true, credentials: true }));
   app.use(express.json({ limit: '10mb' }));
 
   app.get('/api/health', (_req, res) => {
@@ -61,6 +67,15 @@ export function createApp() {
   app.use('/api/dashboard', dashboardRouter);
   app.use('/api/recommendations', recommendationRouter);
   app.use('/api/admin', adminRouter);
+
+  // Serve compiled React SPA frontend
+  app.use(express.static(clientDistPath));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) {
+      return next();
+    }
+    res.sendFile(path.join(clientDistPath, 'index.html'));
+  });
 
   app.use(notFoundHandler);
   app.use(errorHandler);

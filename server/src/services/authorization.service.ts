@@ -1,7 +1,7 @@
-import { CollaboratorRole } from '@prisma/client';
 import prisma from '../config/database.js';
 import { ForbiddenError, NotFoundError } from '../utils/errors.js';
 
+export type CollaboratorRole = 'OWNER' | 'EDITOR' | 'VIEWER';
 export type TripPermission = 'read' | 'write' | 'admin';
 
 const rolePermissions: Record<CollaboratorRole, TripPermission[]> = {
@@ -27,10 +27,11 @@ export async function getTripAccess(tripId: string, userId: string) {
   const collab = trip.collaborators[0];
   if (!collab) throw new ForbiddenError('You do not have access to this trip', 'TRIP_FORBIDDEN');
 
+  const role = collab.role as CollaboratorRole;
   return {
     trip,
-    role: collab.role,
-    permissions: rolePermissions[collab.role],
+    role,
+    permissions: rolePermissions[role] ?? rolePermissions.VIEWER,
   };
 }
 

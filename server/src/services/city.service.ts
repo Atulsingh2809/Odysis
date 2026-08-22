@@ -11,12 +11,12 @@ export class CityService {
     const where: Prisma.CityWhereInput = {
       ...(params.search && {
         OR: [
-          { name: { contains: params.search, mode: 'insensitive' } },
-          { country: { contains: params.search, mode: 'insensitive' } },
+          { name: { contains: params.search } },
+          { country: { contains: params.search } },
         ],
       }),
-      ...(params.country && { country: { equals: params.country, mode: 'insensitive' } }),
-      ...(params.region && { region: { equals: params.region, mode: 'insensitive' } }),
+      ...(params.country && { country: { equals: params.country } }),
+      ...(params.region && { region: { equals: params.region } }),
       ...(params.minCostIndex !== undefined || params.maxCostIndex !== undefined
         ? {
             costIndex: {

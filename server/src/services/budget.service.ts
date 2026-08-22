@@ -1,8 +1,9 @@
-import { ExpenseCategory, Prisma } from '@prisma/client';
 import { eachDayOfInterval, format } from 'date-fns';
 import prisma from '../config/database.js';
 import { NotFoundError } from '../utils/errors.js';
 import { requireTripPermission } from './authorization.service.js';
+
+export type ExpenseCategory = 'TRANSPORT' | 'ACCOMMODATION' | 'ACTIVITIES' | 'MEALS' | 'OTHER';
 
 export class BudgetService {
   async getSummary(tripId: string, userId: string) {
@@ -36,7 +37,7 @@ export class BudgetService {
     const expenseItems = trip.expenses.map((e) => ({
       amount: Number(e.amount),
       currency: e.currency,
-      category: e.category,
+      category: e.category as ExpenseCategory,
       date: e.date,
       city: null as string | null,
     }));
@@ -124,9 +125,9 @@ export class BudgetService {
       create: {
         tripId,
         totalAmount,
-        currency: currency as Prisma.BudgetCreateInput['currency'],
+        currency,
       },
-      update: { totalAmount, currency: currency as Prisma.BudgetUpdateInput['currency'] },
+      update: { totalAmount, currency },
     });
   }
 
@@ -148,7 +149,7 @@ export class BudgetService {
         tripId,
         category: data.category,
         amount: data.amount,
-        currency: data.currency as Prisma.ExpenseCreateInput['currency'],
+        currency: data.currency,
         description: data.description,
         date: data.date,
       },
@@ -167,7 +168,7 @@ export class BudgetService {
       where: { id: expenseId },
       data: {
         ...data,
-        currency: data.currency as Prisma.ExpenseUpdateInput['currency'],
+        currency: data.currency,
       },
     });
   }

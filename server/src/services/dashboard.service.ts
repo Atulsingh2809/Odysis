@@ -66,7 +66,7 @@ function formatTripCard(trip: {
   id: string; name: string; startDate: Date; endDate: Date;
   coverImageUrl: string | null; status: string; currency: string;
   stops: { city: { name: string } }[];
-  budget: { totalAmount: import('@prisma/client').Prisma.Decimal } | null;
+  budget: { totalAmount: unknown } | null;
   _count: { stops: number };
 }) {
   return {

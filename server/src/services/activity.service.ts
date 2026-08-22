@@ -11,9 +11,9 @@ export class ActivityService {
     sortBy: string; sortOrder: 'asc' | 'desc';
   }) {
     const where: Prisma.ActivityWhereInput = {
-      ...(params.search && { name: { contains: params.search, mode: 'insensitive' } }),
+      ...(params.search && { name: { contains: params.search } }),
       ...(params.cityId && { cityId: params.cityId }),
-      ...(params.category && { category: params.category as Prisma.EnumActivityCategoryFilter['equals'] }),
+      ...(params.category && { category: params.category }),
       ...(params.minCost !== undefined || params.maxCost !== undefined
         ? {
             estimatedCost: {
