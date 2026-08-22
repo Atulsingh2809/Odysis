@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { PrismaClient, ActivityCategory, Currency } from '@prisma/client';
 import argon2 from 'argon2';
 

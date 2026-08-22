@@ -3,54 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
-}
-
-enum UserRole {
-  USER
-  ADMIN
-}
-
-enum Currency {
-  INR
-  USD
-  EUR
-  GBP
-  JPY
-  AED
-}
-
-enum TripStatus {
-  DRAFT
-  PLANNED
-  ACTIVE
-  COMPLETED
-}
-
-enum ActivityCategory {
-  SIGHTSEEING
-  FOOD
-  ADVENTURE
-  CULTURE
-  SHOPPING
-  NATURE
-  NIGHTLIFE
-  RELAXATION
-}
-
-enum ExpenseCategory {
-  TRANSPORT
-  ACCOMMODATION
-  ACTIVITIES
-  MEALS
-  OTHER
-}
-
-enum CollaboratorRole {
-  OWNER
-  EDITOR
-  VIEWER
 }
 
 model User {
@@ -58,7 +12,7 @@ model User {
   email        String   @unique
   passwordHash String   @map("password_hash")
   name         String
-  role         UserRole @default(USER)
+  role         String   @default("USER")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
@@ -77,7 +31,7 @@ model Profile {
   userId    String   @unique @map("user_id")
   avatarUrl String?  @map("avatar_url")
   language  String   @default("en")
-  currency  Currency @default(INR)
+  currency  String   @default("INR")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -114,25 +68,25 @@ model PasswordResetToken {
 }
 
 model Trip {
-  id            String     @id @default(uuid())
-  userId        String     @map("user_id")
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
   name          String
   description   String?
-  startDate     DateTime   @map("start_date")
-  endDate       DateTime   @map("end_date")
-  coverImageUrl String?    @map("cover_image_url")
-  status        TripStatus @default(DRAFT)
-  currency      Currency   @default(INR)
-  shareToken    String?    @unique @map("share_token")
-  isPublic      Boolean    @default(false) @map("is_public")
-  createdAt     DateTime   @default(now()) @map("created_at")
-  updatedAt     DateTime   @updatedAt @map("updated_at")
+  startDate     DateTime @map("start_date")
+  endDate       DateTime @map("end_date")
+  coverImageUrl String?  @map("cover_image_url")
+  status        String   @default("DRAFT")
+  currency      String   @default("INR")
+  shareToken    String?  @unique @map("share_token")
+  isPublic      Boolean  @default(false) @map("is_public")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
-  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  stops          TripStop[]
-  expenses       Expense[]
-  budget         Budget?
-  collaborators  TripCollaborator[]
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stops         TripStop[]
+  expenses      Expense[]
+  budget        Budget?
+  collaborators TripCollaborator[]
 
   @@index([userId])
   @@index([startDate])
@@ -140,20 +94,20 @@ model Trip {
 }
 
 model TripStop {
-  id              String    @id @default(uuid())
-  tripId          String    @map("trip_id")
-  cityId          String    @map("city_id")
-  orderIndex      Int       @map("order_index")
-  arrivalDate     DateTime? @map("arrival_date")
-  departureDate   DateTime? @map("departure_date")
-  arrivalTime     String?   @map("arrival_time")
-  departureTime   String?   @map("departure_time")
-  notes           String?
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
+  id            String    @id @default(uuid())
+  tripId        String    @map("trip_id")
+  cityId        String    @map("city_id")
+  orderIndex    Int       @map("order_index")
+  arrivalDate   DateTime? @map("arrival_date")
+  departureDate DateTime? @map("departure_date")
+  arrivalTime   String?   @map("arrival_time")
+  departureTime String?   @map("departure_time")
+  notes         String?
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
 
-  trip       Trip            @relation(fields: [tripId], references: [id], onDelete: Cascade)
-  city       City            @relation(fields: [cityId], references: [id])
+  trip       Trip           @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  city       City           @relation(fields: [cityId], references: [id])
   activities StopActivity[]
 
   @@index([tripId, orderIndex])
@@ -161,22 +115,22 @@ model TripStop {
 }
 
 model City {
-  id          String  @id @default(uuid())
+  id          String   @id @default(uuid())
   name        String
   country     String
   region      String
   description String
-  imageUrl    String  @map("image_url")
-  costIndex   Int     @map("cost_index")
+  imageUrl    String   @map("image_url")
+  costIndex   Int      @map("cost_index")
   popularity  Int
   latitude    Float?
   longitude   Float?
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  stops              TripStop[]
-  activities         Activity[]
-  savedDestinations  SavedDestination[]
+  stops             TripStop[]
+  activities        Activity[]
+  savedDestinations SavedDestination[]
 
   @@index([name])
   @@index([country])
@@ -186,22 +140,22 @@ model City {
 }
 
 model Activity {
-  id              String           @id @default(uuid())
-  cityId          String           @map("city_id")
+  id              String   @id @default(uuid())
+  cityId          String   @map("city_id")
   name            String
   description     String
-  category        ActivityCategory
-  estimatedCost   Decimal          @map("estimated_cost") @db.Decimal(12, 2)
-  currency        Currency         @default(USD)
-  durationMinutes Int              @map("duration_minutes")
-  imageUrl        String           @map("image_url")
-  rating          Float            @default(4.0)
-  popularity      Int              @default(50)
-  createdAt       DateTime         @default(now()) @map("created_at")
-  updatedAt       DateTime         @updatedAt @map("updated_at")
+  category        String
+  estimatedCost   Float    @map("estimated_cost")
+  currency        String   @default("USD")
+  durationMinutes Int      @map("duration_minutes")
+  imageUrl        String   @map("image_url")
+  rating          Float    @default(4.0)
+  popularity      Int      @default(50)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
-  city            City             @relation(fields: [cityId], references: [id])
-  stopActivities  StopActivity[]
+  city           City           @relation(fields: [cityId], references: [id])
+  stopActivities StopActivity[]
 
   @@index([cityId])
   @@index([category])
@@ -228,15 +182,15 @@ model StopActivity {
 }
 
 model Expense {
-  id          String          @id @default(uuid())
-  tripId      String          @map("trip_id")
-  category    ExpenseCategory
-  amount      Decimal         @db.Decimal(12, 2)
-  currency    Currency
+  id          String   @id @default(uuid())
+  tripId      String   @map("trip_id")
+  category    String
+  amount      Float
+  currency    String
   description String?
   date        DateTime
-  createdAt   DateTime        @default(now()) @map("created_at")
-  updatedAt   DateTime        @updatedAt @map("updated_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
 
@@ -248,8 +202,8 @@ model Expense {
 model Budget {
   id          String   @id @default(uuid())
   tripId      String   @unique @map("trip_id")
-  totalAmount Decimal  @map("total_amount") @db.Decimal(12, 2)
-  currency    Currency
+  totalAmount Float    @map("total_amount")
+  currency    String
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
@@ -259,12 +213,12 @@ model Budget {
 }
 
 model TripCollaborator {
-  id        String           @id @default(uuid())
-  tripId    String           @map("trip_id")
-  userId    String           @map("user_id")
-  role      CollaboratorRole
-  createdAt DateTime         @default(now()) @map("created_at")
-  updatedAt DateTime         @updatedAt @map("updated_at")
+  id        String   @id @default(uuid())
+  tripId    String   @map("trip_id")
+  userId    String   @map("user_id")
+  role      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
