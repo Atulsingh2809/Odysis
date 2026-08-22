@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npx prisma generate --schema=server/prisma/schema.prisma && npm run build -w client",
+  "buildCommand": "npx prisma generate && npm run build -w client",
   "outputDirectory": "client/dist",
   "env": {
     "DATABASE_URL": "file:./prisma/dev.db"
