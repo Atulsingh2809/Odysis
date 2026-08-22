@@ -1,5 +1,4 @@
 import path from 'path';
-import { fileURLToPath } from 'url';
 
 // Set environment defaults for Vercel Serverless Function runtime
 if (!process.env.DATABASE_URL) {
@@ -17,4 +16,6 @@ import { createApp } from '../server/src/app.js';
 
 const app = createApp();
 
-export default app;
+export default function handler(req: any, res: any) {
+  return app(req, res);
+}
