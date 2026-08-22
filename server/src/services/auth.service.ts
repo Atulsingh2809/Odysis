@@ -1,4 +1,3 @@
-import argon2 from 'argon2';
 import prisma from '../config/database.js';
 import { config } from '../config/index.js';
 import {
@@ -13,13 +12,14 @@ import {
   generateResetToken,
   parseExpiresIn,
 } from '../utils/helpers.js';
+import { hashPassword, verifyPassword } from '../utils/password.js';
 
 export class AuthService {
   async signup(name: string, email: string, password: string) {
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) throw new ConflictError('Email already registered', 'EMAIL_EXISTS');
 
-    const passwordHash = await argon2.hash(password);
+    const passwordHash = await hashPassword(password);
     const user = await prisma.user.create({
       data: {
         name,
@@ -41,7 +41,7 @@ export class AuthService {
     });
     if (!user) throw new UnauthorizedError('Invalid email or password', 'INVALID_CREDENTIALS');
 
-    const valid = await argon2.verify(user.passwordHash, password);
+    const valid = await verifyPassword(user.passwordHash, password);
     if (!valid) throw new UnauthorizedError('Invalid email or password', 'INVALID_CREDENTIALS');
 
     const tokens = await this.createTokens(user.id, user.email, user.role);
@@ -105,7 +105,7 @@ export class AuthService {
       throw new ValidationError('Invalid or expired reset token', 'INVALID_RESET_TOKEN');
     }
 
-    const passwordHash = await argon2.hash(password);
+    const passwordHash = await hashPassword(password);
     await prisma.$transaction([
       prisma.user.update({ where: { id: resetToken.userId }, data: { passwordHash } }),
       prisma.passwordResetToken.update({ where: { id: resetToken.id }, data: { used: true } }),

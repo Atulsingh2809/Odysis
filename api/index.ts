@@ -1,10 +1,24 @@
+import fs from 'fs';
 import path from 'path';
 
-// Set environment defaults for Vercel Serverless Function runtime
-if (!process.env.DATABASE_URL) {
-  const rootDir = process.cwd();
-  process.env.DATABASE_URL = `file:${path.join(rootDir, 'server', 'prisma', 'dev.db')}`;
+const rootDir = process.cwd();
+const tmpDbPath = '/tmp/dev.db';
+const sourceDbPath = path.join(rootDir, 'server', 'prisma', 'dev.db');
+
+// Ensure writable database file in Vercel Serverless AWS Lambda (/tmp environment)
+if (fs.existsSync('/tmp')) {
+  if (!fs.existsSync(tmpDbPath) && fs.existsSync(sourceDbPath)) {
+    try {
+      fs.copyFileSync(sourceDbPath, tmpDbPath);
+    } catch (err) {
+      console.error('Failed to copy seeded database to /tmp:', err);
+    }
+  }
+  process.env.DATABASE_URL = `file:${tmpDbPath}`;
+} else if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = `file:${sourceDbPath}`;
 }
+
 if (!process.env.JWT_SECRET) {
   process.env.JWT_SECRET = 'globetrotter-production-jwt-secret-key-2026';
 }
