@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "dev": "concurrently \"npm run dev -w server\" \"npm run dev -w client\"",
-    "build": "npm run db:generate -w server && npm run build -w client",
+    "build": "npm run db:generate -w server && npm run build -w client && node -e \"fs.cpSync('client/dist', 'dist', {recursive: true})\"",
     "test": "npm run test -w server && npm run test -w client",
     "lint": "npm run lint -w server && npm run lint -w client",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\"",
