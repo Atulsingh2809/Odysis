@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: globetrotter
+      POSTGRES_PASSWORD: globetrotter
+      POSTGRES_DB: globetrotter
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U globetrotter']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    ports:
+      - '3001:3001'
+    environment:
+      DATABASE_URL: postgresql://globetrotter:globetrotter@postgres:5432/globetrotter?schema=public
+      JWT_SECRET: docker-jwt-secret-change-in-production-min-32-chars
+      JWT_REFRESH_SECRET: docker-refresh-secret-change-in-production-min-32
+      CLIENT_URL: http://localhost
+      NODE_ENV: production
+      SERVER_PORT: 3001
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    ports:
+      - '80:80'
+    depends_on:
+      - server
+
+volumes:
+  postgres_data:
